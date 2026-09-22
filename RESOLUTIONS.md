@@ -127,8 +127,9 @@ then transforms the source with a different toolchain from the one that produces
 
 ## Findings with no fix available
 
-These findings have no published fix at the time of writing. Both are scored below the
-critical/high threshold that the CI gate reads.
+None of these has a fix that can currently be applied: two have no published fix at all,
+and one has a published fix that cannot be installed without breaking its consumer. All
+three are scored below the critical/high threshold that the CI gate reads.
 
 ### `react-router` and `react-router-dom` 6.30.6
 
