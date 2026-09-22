@@ -101,16 +101,19 @@ range against the published version list, not only the patched-version field.
 **Drop when:** `@dhis2/d2-i18n-generate` requests a range that admits 3.0.1, or the package is
 replaced.
 
-### `qs` — `^6.15.2`
+### `qs` — `^6.16.0`
 
 **Why:** one consumer requests `qs` at exactly `6.9.7` and another requests `^6.12.3`. Neither range
 admits the patched release. `@eyeseetea/d2-api` reaches `qs` at runtime, so verify this constraint
-with the test suite and a production build, not with `yarn install` alone.
+with the test suite and a production build, not with `yarn install` alone. The application's own
+direct dependency was itself held exact at `6.15.2`, which is what let the floor decay: raising the
+`resolutions` range alone is not enough while the direct entry pins below it.
 
 **Fixes:** GHSA-q8mj-m7cp-5q26. The 6.9.7 release also carries GHSA-w7fw-mjwx-w883 and
-GHSA-6rw7-vpxm-498p.
+GHSA-6rw7-vpxm-498p. The floor moved from `^6.15.2` to `^6.16.0` for GHSA-4mjr-xmp4-gh2g and
+GHSA-x5fp-wj9c-mxmx, both fixed in 6.16.0.
 
-**Drop when:** every consumer requests a range that admits 6.15.2 or later.
+**Drop when:** every consumer requests a range that admits 6.16.0 or later.
 
 ### `vite` — `^6.4.3`
 
@@ -127,23 +130,26 @@ then transforms the source with a different toolchain from the one that produces
 These findings have no published fix at the time of writing. Both are scored below the
 critical/high threshold that the CI gate reads.
 
-### `react-router` and `react-router-dom` 6.30.4
+### `react-router` and `react-router-dom` 6.30.6
 
-**Chain:** direct dependency `react-router-dom@6.30.4` → `react-router@6.30.4`.
+**Chain:** direct dependency `react-router-dom@6.30.6` → `react-router@6.30.6`.
 
-**Why it cannot be fixed:** GHSA-jjmj-jmhj-qwj2 records no patched release for the react-router-dom
-6.x line, and 6.30.4 is the last release on that line. GHSA-wrjc-x8rr-h8h6 and GHSA-337j-9hxr-rhxg
-are patched in 7.18.0 only. Version 7 changes the routing API, so it is a migration and not a bump.
+**Why it cannot be fixed:** GHSA-wrjc-x8rr-h8h6 and GHSA-337j-9hxr-rhxg are patched in 7.18.0 only.
+Version 7 changes the routing API, so it is a migration and not a bump. GHSA-jjmj-jmhj-qwj2 is no
+longer in this entry: it was fixed in 6.30.6, so bumping the direct dependency from 6.30.4 closed it.
+Check the affected range against the published version list before recording "no fix", not only the
+advisory's patched-version field: this is why that one moved out of this section instead of staying
+here indefinitely.
 
 **Impact:** runtime code that ships to users.
 
-**Reachability:** all three advisories concern redirect targets that the calling application passes
-to the router. They are not reachable through the library's own internal navigation.
+**Reachability:** both remaining advisories concern redirect targets that the calling application
+passes to the router. They are not reachable through the library's own internal navigation.
 
 **Severity note:** scored medium by both the local audit and the workflow scan, so the CI gate does
 not block on them.
 
-**Review condition:** a 6.30.5 release that carries the fix, or a planned migration to react-router 7.
+**Review condition:** a 6.x release that carries the fix, or a planned migration to react-router 7.
 
 ### `elliptic` 6.6.1
 
@@ -161,6 +167,30 @@ that code through `browserify-sign` and `create-ecdh`.
 **Severity note:** scored low.
 
 **Review condition:** an `elliptic` release above 6.6.1.
+
+### `decode-uri-component` 0.2.2
+
+**Chain:** `@testing-library/jest-dom` → `css@3.0.0` → `source-map-resolve@0.6.0` →
+`decode-uri-component@^0.2.0`.
+
+**Why it cannot be fixed:** GHSA-vcc3-ghjq-m6fr is patched in 0.5.0. `source-map-resolve@0.6.0` is
+its last published release and still requests `decode-uri-component@^0.2.0`, so there is no newer
+parent release to pick up the fix. Forcing `decode-uri-component` to 0.5.0 with a resolution installs
+cleanly and fails at load: 0.2.x ships plain CommonJS, 0.5.0 is `"type": "module"` with no `main`
+field, and `source-map-resolve` calls it with `require()`. That is a broken build, not a remediation.
+
+**Impact:** dev/test tooling only (`@testing-library/jest-dom`, used by `vitest`). Never reaches the
+application bundle.
+
+**Reachability:** the advisory is a ReDoS in percent-decoding untrusted input. `source-map-resolve`
+only passes it strings already extracted from a source map by its own parser, in code that runs
+against local build artifacts during tests, not untrusted input.
+
+**Severity note:** scored medium by both the local audit and the workflow scan.
+
+**Review condition:** `source-map-resolve` publishes a release that requests
+`decode-uri-component >= 0.3` (its first non-CommonJS-incompatible move), or `@testing-library/jest-dom`
+drops it.
 
 ## Withdrawn advisories
 
