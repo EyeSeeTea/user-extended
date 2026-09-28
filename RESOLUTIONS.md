@@ -105,9 +105,11 @@ replaced.
 
 **Why:** one consumer requests `qs` at exactly `6.9.7` and another requests `^6.12.3`. Neither range
 admits the patched release. `@eyeseetea/d2-api` reaches `qs` at runtime, so verify this constraint
-with the test suite and a production build, not with `yarn install` alone. The application's own
-direct dependency was itself held exact at `6.15.2`, which is what let the floor decay: raising the
-`resolutions` range alone is not enough while the direct entry pins below it.
+with the test suite and a production build, not with `yarn install` alone. The `resolutions` range
+overrides every request for `qs`, the application's own direct dependency included, and the lockfile
+keeps whatever version it last resolved inside that range. Raising the floor is what moves the
+installed version. The direct dependency is kept at the same version so the manifest does not
+declare an older one.
 
 **Fixes:** GHSA-q8mj-m7cp-5q26. The 6.9.7 release also carries GHSA-w7fw-mjwx-w883 and
 GHSA-6rw7-vpxm-498p. The floor moved from `^6.15.2` to `^6.16.0` for GHSA-4mjr-xmp4-gh2g and
@@ -189,9 +191,8 @@ against local build artifacts during tests, not untrusted input.
 
 **Severity note:** scored medium by both the local audit and the workflow scan.
 
-**Review condition:** `source-map-resolve` publishes a release that requests
-`decode-uri-component >= 0.3` (its first non-CommonJS-incompatible move), or `@testing-library/jest-dom`
-drops it.
+**Review condition:** `source-map-resolve` publishes a release that can consume the ESM-only
+`decode-uri-component@0.5.0`, or `@testing-library/jest-dom` drops it.
 
 ## Withdrawn advisories
 
