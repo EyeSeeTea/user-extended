@@ -33,6 +33,16 @@ describe("InmemoryCache", () => {
         expect(result.data).toBe(false);
         expect(source.runs()).toBe(1);
     });
+
+    it("does not remember a failed read, so the next read asks the source again", async () => {
+        const cache = new InmemoryCache();
+
+        const failed = await cache.getOrFuture(KEY, Future.error<string, number>("server error")).runAsync();
+        const retried = await cache.getOrFuture(KEY, Future.success(4)).runAsync();
+
+        expect(failed.error).toBe("server error");
+        expect(retried.data).toBe(4);
+    });
 });
 
 function givenACountingSource<T>(values: T[]) {
