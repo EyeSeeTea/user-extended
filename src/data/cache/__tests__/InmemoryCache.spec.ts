@@ -11,4 +11,27 @@ describe("InmemoryCache", () => {
 
         expect(result.data).toBe(4);
     });
+
+    it("returns the cached value without running the source again", async () => {
+        const cache = new InmemoryCache();
+        const source = givenACountingSource([4, 5]);
+
+        await cache.getOrFuture(KEY, source.future).runAsync();
+        const result = await cache.getOrFuture(KEY, source.future).runAsync();
+
+        expect(result.data).toBe(4);
+        expect(source.runs()).toBe(1);
+    });
 });
+
+function givenACountingSource<T>(values: T[]) {
+    let runs = 0;
+    const future = Future.fromComputation<string, T>(resolve => {
+        const value = values[runs] as T;
+        runs += 1;
+        resolve(value);
+        return Future.noCancel;
+    });
+
+    return { future, runs: () => runs };
+}
