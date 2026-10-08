@@ -47,11 +47,11 @@ The same class is copied across EyeSeeTea apps. Versions found:
 | uhcpw | `getOrFuture(key, future)` | Same fluture-based `Future` as this project, but a truthy check misses falsy cached values |
 | **sharing-settings-app-dev** | `getOrFuture(key, future)` | **Same `Future` class and `FutureData<D> = Future<string, D>` as this project**; checks `!== undefined` |
 
-Take `getOrFuture` from `sharing-settings-app-dev/src/data/cache/InmemoryCache.ts`, at `src/data/cache/InmemoryCache.ts` (the path that repo uses), importing this project's `Future`. Add `set(key, value)` so `save()` can replace the remembered value. Leave out `get`, `getKeys` and `clear`: nothing here uses them, and they can be copied when something does. Failed futures are not stored (`map` only runs on success), so the next read retries.
+Take `getOrFuture` from `sharing-settings-app-dev/src/data/cache/InmemoryCache.ts`, at `src/data/cache/InmemoryCache.ts` (the path that repo uses), importing this project's `Future`. Add `set(key, value)` so `save()` can replace the remembered value. Leave out `get`, `getKeys` and `clear`: nothing here uses them, and they can be copied when something does. Unlike the other apps, the class is generic over the cached value (`InmemoryCache<T>`, one cache per value type): each settings repository caches a single type, and it avoids the `as T` downcast the shared version needs (`rules/lang/typescript.md`). `set` replaces the internal record instead of mutating it. Failed futures are not stored (`map` only runs on success), so the next read retries.
 
 ### Cache as a private field of each repository, not a decorator
 
-`private cache = new InmemoryCache()` in `AppSettingsD2Repository` and `AppSettingsD2ConstantRepository`, as the other EyeSeeTea apps do (`InstanceDefaultRepository`, `UserD2Repository`). The duplication is a field plus two lines per repository. Alternative considered: a `CachedAppSettingsRepository` decorator wired in `CompositionRoot.ts`; rejected to follow the established convention and keep the composition root unchanged.
+`private cache = new InmemoryCache<AppSettings>()` in `AppSettingsD2Repository` and `AppSettingsD2ConstantRepository`, as the other EyeSeeTea apps do (`InstanceDefaultRepository`, `UserD2Repository`). The duplication is a field plus two lines per repository. Alternative considered: a `CachedAppSettingsRepository` decorator wired in `CompositionRoot.ts`; rejected to follow the established convention and keep the composition root unchanged.
 
 ### No in-flight deduplication
 

@@ -1,20 +1,21 @@
 import { Future, FutureData } from "../../domain/entities/Future";
 
-export class InmemoryCache {
-    private cache: Record<string, unknown> = {};
+export class InmemoryCache<T> {
+    private cache: Readonly<Record<string, T>> = {};
 
-    getOrFuture<T>(cacheKey: string, future: FutureData<T>): FutureData<T> {
-        if (this.cache[cacheKey] !== undefined) {
-            return Future.success(this.cache[cacheKey] as T);
+    getOrFuture(cacheKey: string, future: FutureData<T>): FutureData<T> {
+        const cached = this.cache[cacheKey];
+        if (cached !== undefined) {
+            return Future.success(cached);
         }
 
         return future.map(response => {
-            this.cache[cacheKey] = response;
+            this.set(cacheKey, response);
             return response;
         });
     }
 
-    set<T>(cacheKey: string, value: T): void {
-        this.cache[cacheKey] = value;
+    set(cacheKey: string, value: T): void {
+        this.cache = { ...this.cache, [cacheKey]: value };
     }
 }
