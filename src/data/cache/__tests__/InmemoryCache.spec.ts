@@ -22,6 +22,17 @@ describe("InmemoryCache", () => {
         expect(result.data).toBe(4);
         expect(source.runs()).toBe(1);
     });
+
+    it("keeps a cached falsy value instead of asking the source again", async () => {
+        const cache = new InmemoryCache();
+        const source = givenACountingSource([false, true]);
+
+        await cache.getOrFuture(KEY, source.future).runAsync();
+        const result = await cache.getOrFuture(KEY, source.future).runAsync();
+
+        expect(result.data).toBe(false);
+        expect(source.runs()).toBe(1);
+    });
 });
 
 function givenACountingSource<T>(values: T[]) {
