@@ -13,4 +13,8 @@ export class InmemoryCache {
             return response;
         });
     }
+
+    set<T>(cacheKey: string, value: T): void {
+        this.cache[cacheKey] = value;
+    }
 }

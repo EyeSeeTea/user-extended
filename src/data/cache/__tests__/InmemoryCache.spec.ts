@@ -43,6 +43,17 @@ describe("InmemoryCache", () => {
         expect(failed.error).toBe("server error");
         expect(retried.data).toBe(4);
     });
+
+    it("serves a value set by the caller without running the source", async () => {
+        const cache = new InmemoryCache();
+        const source = givenACountingSource([4]);
+
+        cache.set(KEY, 7);
+        const result = await cache.getOrFuture(KEY, source.future).runAsync();
+
+        expect(result.data).toBe(7);
+        expect(source.runs()).toBe(0);
+    });
 });
 
 function givenACountingSource<T>(values: T[]) {
