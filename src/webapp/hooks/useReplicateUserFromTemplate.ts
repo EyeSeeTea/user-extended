@@ -13,7 +13,7 @@ import {
     ReplicateTemplateProps,
     ReplicateTemplateValidationError,
 } from "../../domain/entities/ReplicateTemplate";
-import { useAppSettings } from "./useAppSettings";
+import { useAppSettingsContext } from "../contexts/AppSettingsProvider";
 import { Password } from "../../domain/value-objects/Password";
 
 export interface UseReplicateUserFromTemplateReturn {
@@ -34,7 +34,7 @@ export const useReplicateUserFromTemplate = (
     onRequestClose: () => void
 ): UseReplicateUserFromTemplateReturn => {
     const { compositionRoot } = useAppContext();
-    const { appSettings } = useAppSettings();
+    const { appSettings } = useAppSettingsContext();
 
     const [userToReplicate, setUserToReplicate] = React.useState<User | undefined>();
     const [existingUsernames, setExistingUsernames] = React.useState<string[]>([]);
