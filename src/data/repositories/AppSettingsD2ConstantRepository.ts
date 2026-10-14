@@ -5,15 +5,18 @@ import { AppSettingsRepository } from "../../domain/repositories/AppSettingsRepo
 import { apiToFuture } from "../../utils/futures";
 import { Maybe } from "../../types/utils";
 import { getUid } from "../../utils/uid";
+import { InmemoryCache } from "../cache/InmemoryCache";
 import { mergeAndAddRuntimeProps, removeRuntimeLogic } from "./common/appSettingsHelpers";
 
 export class AppSettingsD2ConstantRepository implements AppSettingsRepository {
     private constantCode = CONSTANT_SETTINGS_CODE;
+    private readonly cacheKey = "settings";
+    private readonly cache = new InmemoryCache<AppSettings>();
 
     constructor(private api: D2Api) {}
 
     get(): FutureData<AppSettings> {
-        return this.getSettings();
+        return this.cache.getOrFuture(this.cacheKey, this.getSettings());
     }
 
     save(appSettings: AppSettings): FutureData<AppSettings> {
@@ -37,7 +40,10 @@ export class AppSettingsD2ConstantRepository implements AppSettingsRepository {
                 description: JSON.stringify(settingsToSave, null, 2),
                 value: 1,
             };
-            return apiToFuture(this.api.metadata.post({ constants: [constantToSave] })).map(() => appSettings);
+            return apiToFuture(this.api.metadata.post({ constants: [constantToSave] })).map(() => {
+                this.cache.set(this.cacheKey, appSettings);
+                return appSettings;
+            });
         });
     }
 
