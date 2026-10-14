@@ -82,7 +82,7 @@ const config = defineConfig(({ mode }) => {
             environment: "jsdom",
             include: ["**/*.spec.{ts,tsx}"],
             setupFiles: ["./config/testSetup.ts", "./src/tests/setup.js"],
-            exclude: ["node_modules", "cypress"],
+            exclude: ["node_modules", "cypress", ".est_ai/**"],
             globals: true,
         },
         server: {

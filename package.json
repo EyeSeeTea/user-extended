@@ -121,6 +121,7 @@
         "test": "vitest run",
         "test-unit-watch": "vitest watch",
         "lint": "eslint src cypress --ext .js,.jsx,.ts,.tsx",
+        "check": "tsc --noEmit && yarn lint && yarn test",
         "prettify": "prettier \"./**/*.{js,jsx,json,css,ts,tsx}\" --write",
         "extract-pot": "yarn d2-i18n-extract -p src/ -o i18n/",
         "localize": "yarn update-po && d2-i18n-generate -l -n user-extended-app -p ./i18n/ -o ./src/locales/",
