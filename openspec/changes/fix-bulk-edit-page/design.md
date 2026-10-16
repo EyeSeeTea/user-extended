@@ -25,9 +25,10 @@ See proposal.md (Why). Current state that shapes the approach:
 ### Data flow
 
 ```
-UserBulkEditPage / UserEditPage (webapp)
+UserBulkEditPage (renders) → useUserBulkEdit (presentation logic, webapp)
+UserEditPage (webapp)
   ├─ new row / new user ← newUserProps()            (domain/entities/UserProps.ts)
-  └─ onSubmit → compositionRoot.users.save(users)
+  └─ save / onSubmit → compositionRoot.users.save(users)
         SaveUsersUseCase (domain/usecases)
           ├─ userRepository.getByIds(ids)            → which ids exist
           ├─ existing → User.createExisted(props)
@@ -38,7 +39,7 @@ UserBulkEditPage / UserEditPage (webapp)
 ```
 
 ### 1. Rows live only in the form
-The page keeps its initial users as fixed `initialValues` (from the navigation state, never updated afterwards). "Add user" appends the new row with the form API (`form.change("users", [...current, newUser])`), as `removeRow` already does. The form is the only source of truth for rows, so it never reinitializes.
+The page keeps its initial users as fixed `initialValues` (from the navigation state, never updated afterwards). "Add user" (`addUser` in the hook, §8) appends the new row with the form API (`form.change("users", [...current, newUser])`), as `removeRow` already does. The form is the only source of truth for rows, so it never reinitializes.
 - *Alternative:* keep the `users` state and sync it on every change (`FormSpy`), or set `keepDirtyOnReinitialize`. Rejected: two sources of truth for the same rows, and `keepDirtyOnReinitialize` would still bring back deleted rows.
 
 ### 2. Missing navigation state
@@ -53,13 +54,18 @@ A `newUserProps()` function in `UserProps.ts` returns `defaultUserProps` with a 
 - *Alternative:* the UI tells the use case which users are new (a flag or a list of ids). Rejected: the UI already lost that information in `/new` (the id is generated before save) and could lie; the server is the source of truth, and it costs one request per save.
 
 ### 5. Errors reach the form
-The use case joins the validation errors into one message that names each invalid user (username or name, or its row) and its fields, using the existing `ValidationError` helpers. The bulk edit `onSubmit` returns it as `{ [FORM_ERROR]: message }` so the form's existing `NoticeBox` shows it (today it returns the bare string, which react-final-form ignores, and only the snackbar shows it). `UserEditWizard` already shows the string returned by `onSave` as its submit error.
+The use case joins the validation errors into one message that names each invalid user (username or name, or its row) and its fields, using the existing `ValidationError` helpers. The bulk edit `save` (in the hook, §8) returns it as `{ [FORM_ERROR]: message }` so the form's existing `NoticeBox` shows it (today it returns the bare string, which react-final-form ignores, and only the snackbar shows it). `UserEditWizard` already shows the string returned by `onSave` as its submit error.
 
 ### 6. Editable fields per row
 Bulk edit passes `isEdit` per row: `false` for rows added in the page, `true` for users that came from the list. The page knows the initial ids (from `initialValues`), so a row is new when its id is not among them. When a row is added, `username` and `password` are added to the visible columns if they are missing.
 
 ### 7. `/new`
 `UserEditPage` uses `newUserProps()` instead of `{ ...defaultUserProps, id: generateUid() }`, and `UserListTable` re-enables `onActionButtonClick: () => navigate("/new")` (removing the FIXME).
+
+
+### 8. Presentation logic in a hook
+`useUserBulkEdit`, next to the page, holds the page's presentation logic: the users read from the navigation state and the redirect decision, the final-form instance (`createForm`, fixed initial values), `addUser`, `removeUser(row)`, the visible columns and the column selector, the import summary and `save` (use case, loading, snackbar, summary, back to the list). `UserBulkEditPage` renders `<Form form={form}>` with what the hook returns, and the grid rows get `removeUser` through `itemData` instead of `useForm`. Fields and their validation stay as they are: react-final-form field components shared with `/new` and the import table.
+- *Alternative:* a hook independent of the form (rows as React state, controlled fields, validation from the domain). Postponed: the FF fields are shared with the wizard and the import table, and the domain lacks rules the UI validators have (phone, WhatsApp, email of existing users). Logged in `docs/technical-debt.md`.
 
 ## Risks / Trade-offs
 
