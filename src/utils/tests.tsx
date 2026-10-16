@@ -1,12 +1,18 @@
 import { render, RenderResult } from "@testing-library/react";
 import { LoadingProvider, SnackbarProvider } from "@eyeseetea/d2-ui-components";
+import { MuiThemeProvider } from "@material-ui/core/styles";
+import OldMuiThemeProvider from "material-ui/styles/MuiThemeProvider";
 import { ReactNode } from "react";
+import { vi } from "vitest";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { getCompositionRoot } from "../CompositionRoot";
 import { getD2ApiFromInstance } from "./d2-api";
 import { AppContext, AppContextState } from "../webapp/contexts/app-context";
 import { Instance } from "../data/entities/Instance";
 import { UserProps } from "../domain/entities/UserProps";
+import muiThemeLegacy from "../webapp/pages/app/themes/dhis2-legacy.theme";
+import { muiTheme } from "../webapp/pages/app/themes/dhis2.theme";
+import { getMuiLocalization } from "../webapp/pages/app/themes/muiLocales";
 
 export function getTestUser(): UserProps {
     return {
@@ -80,11 +86,15 @@ export function getTestContext() {
 
 export function getReactComponent(children: ReactNode, context: AppContextState): RenderResult {
     return render(
-        <AppContext.Provider value={context}>
-            <SnackbarProvider>
-                <LoadingProvider>{children}</LoadingProvider>
-            </SnackbarProvider>
-        </AppContext.Provider>
+        <MuiThemeProvider theme={muiTheme(getMuiLocalization("en", "US"))}>
+            <OldMuiThemeProvider muiTheme={muiThemeLegacy}>
+                <AppContext.Provider value={context}>
+                    <SnackbarProvider>
+                        <LoadingProvider>{children}</LoadingProvider>
+                    </SnackbarProvider>
+                </AppContext.Provider>
+            </OldMuiThemeProvider>
+        </MuiThemeProvider>
     );
 }
 
@@ -119,3 +129,10 @@ const CurrentLocation: React.FC = () => {
     const { pathname } = useLocation();
     return <p>{getLocationText(pathname)}</p>;
 };
+
+/* jsdom has no layout, so every element measures 0x0 and components that size themselves to their
+   container (e.g. virtualized grids) render nothing. Restored by vi.restoreAllMocks(). */
+export function givenAScreenSize(width: number, height: number): void {
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(width);
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(height);
+}

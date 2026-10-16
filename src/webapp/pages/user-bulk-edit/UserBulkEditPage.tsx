@@ -5,7 +5,7 @@ import { Paper } from "@material-ui/core";
 import { Delete, ViewColumn } from "@material-ui/icons";
 import { IconButton } from "material-ui";
 import React, { useCallback, useState } from "react";
-import { Form, useForm } from "react-final-form";
+import { Form, FormRenderProps, useForm } from "react-final-form";
 import { Navigate, useLocation } from "react-router";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { VariableSizeGrid as Grid } from "react-window";
@@ -30,9 +30,7 @@ export const UserBulkEditPage: React.FC<{ isEdit: boolean }> = ({ isEdit }) => {
     const snackbar = useSnackbar();
 
     const location = useLocation();
-    const locationUsers = getUsersFromLocationState(location.state);
-
-    const [users, setUsers] = useState<UserProps[]>(locationUsers);
+    const [initialValues] = useState<FormValues>(() => ({ users: getUsersFromLocationState(location.state) }));
     const [summary, setSummary] = useState<MetadataResponse[]>();
     const [columns, setColumns] = useState<string[]>(baseUserColumns);
     const [columnSelectorOpen, setColumnSelectorOpen] = useState<boolean>(false);
@@ -40,7 +38,7 @@ export const UserBulkEditPage: React.FC<{ isEdit: boolean }> = ({ isEdit }) => {
     const goHome = useCallback(() => goBack(true), [goBack]);
 
     const onSubmit = useCallback(
-        async ({ users }: { users: UserProps[] }) => {
+        async ({ users }: FormValues) => {
             loading.show(true, i18n.t("Saving users"));
 
             const { data, error } = await compositionRoot.users.save(users).runAsync();
@@ -60,19 +58,19 @@ export const UserBulkEditPage: React.FC<{ isEdit: boolean }> = ({ isEdit }) => {
         [compositionRoot, snackbar, goHome, loading]
     );
 
-    const addRow = useCallback(() => {
+    const addRow = useCallback((form: FormRenderProps<FormValues>["form"]) => {
         const newUser = {
             ...defaultUserProps,
             username: "",
             password: `District123$`,
         };
 
-        setUsers(users => users.concat(newUser));
+        form.change("users", [...form.getState().values.users, newUser]);
     }, []);
 
     const title = i18n.t("Edit users");
 
-    if (users.length === 0) return <Navigate replace to="/" />;
+    if (initialValues.users.length === 0) return <Navigate replace to="/" />;
     const closeSummary = () => setSummary(undefined);
 
     return (
@@ -98,11 +96,11 @@ export const UserBulkEditPage: React.FC<{ isEdit: boolean }> = ({ isEdit }) => {
                 />
             )}
             <Container>
-                <Form<{ users: UserProps[] }>
+                <Form<FormValues>
                     autocomplete="off"
                     onSubmit={onSubmit}
-                    initialValues={{ users }}
-                    render={({ handleSubmit, values, submitError }) => (
+                    initialValues={initialValues}
+                    render={({ handleSubmit, values, submitError, form }) => (
                         <StyledForm onSubmit={handleSubmit}>
                             <MaxHeight>
                                 <AutoSizer>
@@ -131,7 +129,7 @@ export const UserBulkEditPage: React.FC<{ isEdit: boolean }> = ({ isEdit }) => {
                             )}
 
                             <ButtonsRow middle>
-                                <Button name={i18n.t("Add user")} onClick={addRow} primary>
+                                <Button name={i18n.t("Add user")} onClick={() => addRow(form)} primary>
                                     {i18n.t("Add user")}
                                 </Button>
                             </ButtonsRow>
@@ -158,6 +156,8 @@ function getUsersFromLocationState(state: unknown): UserProps[] {
         ? state.users
         : [];
 }
+
+type FormValues = { users: UserProps[] };
 
 const baseUserColumns = ["firstName", "surname", "email", "userRoles", "userGroups", "organisationUnits"];
 
@@ -186,7 +186,7 @@ interface RowItemProps {
 }
 
 const RowItem: React.FC<RowItemProps> = ({ data, columnIndex, rowIndex }) => {
-    const form = useForm<{ users: UserProps[] }>();
+    const form = useForm<FormValues>();
     const headerRow = rowIndex === 0;
     const deleteRow = columnIndex === 0;
     const row = rowIndex - 1;
