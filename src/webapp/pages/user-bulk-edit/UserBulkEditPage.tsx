@@ -30,7 +30,7 @@ export const UserBulkEditPage: React.FC<{ isEdit: boolean }> = ({ isEdit }) => {
     const snackbar = useSnackbar();
 
     const location = useLocation();
-    const { users: locationUsers = [] } = location.state as { users: UserProps[] };
+    const locationUsers = getUsersFromLocationState(location.state);
 
     const [users, setUsers] = useState<UserProps[]>(locationUsers);
     const [summary, setSummary] = useState<MetadataResponse[]>();
@@ -152,6 +152,12 @@ export const UserBulkEditPage: React.FC<{ isEdit: boolean }> = ({ isEdit }) => {
         </Wrapper>
     );
 };
+
+function getUsersFromLocationState(state: unknown): UserProps[] {
+    return typeof state === "object" && state !== null && "users" in state && Array.isArray(state.users)
+        ? state.users
+        : [];
+}
 
 const baseUserColumns = ["firstName", "surname", "email", "userRoles", "userGroups", "organisationUnits"];
 
