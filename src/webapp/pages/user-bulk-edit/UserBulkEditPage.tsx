@@ -19,7 +19,7 @@ import { UserBulkEditFormValues, useUserBulkEdit } from "./useUserBulkEdit";
 const rowHeight = (index: number) => (index === 0 ? 30 : 70);
 const columnWidth = (index: number) => (index === 0 ? 50 : 250);
 
-export const UserBulkEditPage: React.FC<{ isEdit: boolean }> = ({ isEdit }) => {
+export const UserBulkEditPage: React.FC = () => {
     const {
         shouldRedirect,
         form,
@@ -28,6 +28,7 @@ export const UserBulkEditPage: React.FC<{ isEdit: boolean }> = ({ isEdit }) => {
         summary,
         addUser,
         removeUser,
+        isNewUser,
         save,
         goBack,
         close,
@@ -80,7 +81,7 @@ export const UserBulkEditPage: React.FC<{ isEdit: boolean }> = ({ isEdit }) => {
                                             estimatedRowHeight={70}
                                             rowHeight={rowHeight}
                                             columnWidth={columnWidth}
-                                            itemData={{ columns, isEdit, removeUser }}
+                                            itemData={{ columns, isNewUser, removeUser }}
                                         >
                                             {Row}
                                         </Grid>
@@ -136,7 +137,7 @@ const Row: React.FC<RowItemProps & { style: object }> = ({ style, ...props }) =>
 );
 
 interface RowItemProps {
-    data: { columns: string[]; isEdit: boolean; removeUser: (row: number) => void };
+    data: { columns: string[]; isNewUser: (row: number) => boolean; removeUser: (row: number) => void };
     columnIndex: number;
     rowIndex: number;
 }
@@ -173,7 +174,7 @@ const RowItem: React.FC<RowItemProps> = ({ data, columnIndex, rowIndex }) => {
 
     return (
         <Item>
-            <RenderUserImportField row={row} field={field} isEdit={data.isEdit} />
+            <RenderUserImportField row={row} field={field} isEdit={!data.isNewUser(row)} />
         </Item>
     );
 };

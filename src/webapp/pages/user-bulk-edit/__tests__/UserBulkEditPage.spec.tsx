@@ -65,6 +65,25 @@ describe("UserBulkEditPage", () => {
             expect(getSurnames()).toEqual(["Edited", "Keita"]);
         });
     });
+
+    describe("when a user is added", () => {
+        beforeEach(() => {
+            givenAScreenSize(2560, 1440);
+        });
+
+        it("lets its username and password be filled in, keeping existing usernames read-only", () => {
+            const state = givenUsersToEdit(["Traore"]);
+
+            renderPage(state);
+            clickAddUser();
+
+            expect(getFieldStates("Username")).toEqual([
+                { value: "admin", disabled: true },
+                { value: "", disabled: false },
+            ]);
+            expect(getFieldStates("Password")[1]).toEqual({ value: "", disabled: false });
+        });
+    });
 });
 
 function givenANavigationStateWithoutUsers(): NavigationState {
@@ -96,6 +115,12 @@ function getSurnames(): string[] {
     return getSurnameInputs().map(input => input.value);
 }
 
+function getFieldStates(placeholder: string): { value: string; disabled: boolean }[] {
+    return screen
+        .queryAllByPlaceholderText<HTMLInputElement>(placeholder)
+        .map(input => ({ value: input.value, disabled: input.disabled }));
+}
+
 function getSurnameInputs(): HTMLInputElement[] {
     return screen.getAllByPlaceholderText<HTMLInputElement>("Surname");
 }
@@ -104,7 +129,7 @@ function renderPage(state: NavigationState) {
     const { context } = getTestContext();
 
     return getReactComponentInRoute(
-        <UserBulkEditPage isEdit={true} />,
+        <UserBulkEditPage />,
         { path: "/bulk-edit", url: "/bulk-edit", state },
         context
     );

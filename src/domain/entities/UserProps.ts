@@ -1,6 +1,7 @@
 import _ from "lodash";
 import { Maybe } from "../../types/utils";
 import { OrgUnit } from "./OrgUnit";
+import { generateUid } from "../../utils/uid";
 import { getId, Id, NamedRef } from "./Ref";
 import { User } from "./User";
 
@@ -86,6 +87,28 @@ export const defaultUserProps: UserProps = {
     uiLocale: "en",
     dbLocale: "en",
 };
+
+/* A user to be created: its own identifier and no empty references, unlike defaultUserProps (used by import) */
+export function newUserProps(): UserProps {
+    const now = new Date();
+
+    return {
+        ...defaultUserProps,
+        id: generateUid(),
+        lastUpdated: now,
+        created: now,
+        userRoles: [],
+        userGroups: [],
+        organisationUnits: [],
+        dataViewOrganisationUnits: [],
+        searchOrganisationsUnits: [],
+        authorities: [],
+        password: "",
+        createdBy: undefined,
+        lastModifiedBy: undefined,
+    };
+}
+
 export interface AccessPermissions {
     read: boolean;
     update: boolean;

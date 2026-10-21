@@ -2,7 +2,7 @@ import { useLoading, useSnackbar } from "@eyeseetea/d2-ui-components";
 import { createForm, FormApi } from "final-form";
 import { useCallback, useState } from "react";
 import { useLocation } from "react-router";
-import { defaultUserProps, UserProps } from "../../../domain/entities/UserProps";
+import { newUserProps, UserProps } from "../../../domain/entities/UserProps";
 import { MetadataResponse } from "../../../types/d2-api";
 import i18n from "../../../utils/i18n";
 import { useAppContext } from "../../contexts/app-context";
@@ -18,6 +18,7 @@ export interface UserBulkEditState {
     summary: MetadataResponse[] | undefined;
     addUser: () => void;
     removeUser: (row: number) => void;
+    isNewUser: (row: number) => boolean;
     save: (values: UserBulkEditFormValues) => Promise<string | undefined>;
     goBack: () => void;
     close: () => void;
@@ -67,13 +68,8 @@ export function useUserBulkEdit(): UserBulkEditState {
     );
 
     const addUser = useCallback(() => {
-        const newUser = {
-            ...defaultUserProps,
-            username: "",
-            password: `District123$`,
-        };
-
-        form.change("users", [...form.getState().values.users, newUser]);
+        form.change("users", [...form.getState().values.users, newUserProps()]);
+        setColumns(columns => [...columns, ...newUserColumns.filter(column => !columns.includes(column))]);
     }, [form]);
 
     const removeUser = useCallback(
@@ -82,6 +78,14 @@ export function useUserBulkEdit(): UserBulkEditState {
             form.change("users", [...users.slice(0, row), ...users.slice(row + 1)]);
         },
         [form]
+    );
+
+    const isNewUser = useCallback(
+        (row: number) => {
+            const user = form.getState().values.users[row];
+            return user !== undefined && !initialUsers.some(initialUser => initialUser.id === user.id);
+        },
+        [form, initialUsers]
     );
 
     const openColumnSelector = useCallback(() => setColumnSelectorOpen(true), []);
@@ -96,6 +100,7 @@ export function useUserBulkEdit(): UserBulkEditState {
         summary,
         addUser,
         removeUser,
+        isNewUser,
         save,
         goBack,
         close,
@@ -113,3 +118,6 @@ function getUsersFromLocationState(state: unknown): UserProps[] {
 }
 
 const baseUserColumns = ["firstName", "surname", "email", "userRoles", "userGroups", "organisationUnits"];
+
+/* Columns a new user needs to be filled in; existing users have them read-only or optional */
+const newUserColumns = ["username", "password"];
