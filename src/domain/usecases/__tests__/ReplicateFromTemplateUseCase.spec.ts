@@ -2,21 +2,20 @@ import _ from "lodash";
 import { anything, instance, mock, when, capture } from "ts-mockito";
 import { sourceUser } from "./data/user";
 
-import { UserD2ApiRepository } from "../../../data/repositories/UserD2ApiRepository";
-
 import { ReplicateFromTemplateUseCase } from "../ReplicateFromTemplateUseCase";
 import { UserProps } from "../../entities/UserProps";
 import { Future } from "../../entities/Future";
 import { MetadataResponse } from "../../../types/d2-api";
 import { ReplicateTemplate } from "../../entities/ReplicateTemplate";
+import { UserRepository } from "../../repositories/UserRepository";
 
-let userRepositoryMock: UserD2ApiRepository;
+let userRepositoryMock: UserRepository;
 let replicateFromTemplateUseCase: ReplicateFromTemplateUseCase;
 let generatedUsers: UserProps[] = [];
 
 describe("ReplicateFromTemplateUseCase", () => {
     beforeEach(() => {
-        userRepositoryMock = mock(UserD2ApiRepository);
+        userRepositoryMock = mock<UserRepository>();
         replicateFromTemplateUseCase = new ReplicateFromTemplateUseCase(instance(userRepositoryMock));
     });
 
@@ -46,6 +45,18 @@ describe("ReplicateFromTemplateUseCase", () => {
 
         [generatedUsers] = capture(userRepositoryMock.save).last();
         compareUsers(generatedUsers, expectedUsers);
+    });
+
+    it("generates a different identifier for every replicated user", async () => {
+        const template = givenAnExpectedTemplate(sourceUser, 2, sourceUser.username + "_$index", "Password123!_$index");
+
+        await replicateFromTemplateUseCase.execute(sourceUser, template).runAsync();
+
+        [generatedUsers] = capture(userRepositoryMock.save).last();
+        expect(generatedUsers.map(user => user.id)).toHaveLength(2);
+        expect(generatedUsers[0]?.id).not.toEqual(sourceUser.id);
+        expect(generatedUsers[1]?.id).not.toEqual(sourceUser.id);
+        expect(generatedUsers[0]?.id).not.toEqual(generatedUsers[1]?.id);
     });
 
     it("Should disble openID from replicated users", async () => {

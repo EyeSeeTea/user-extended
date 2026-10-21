@@ -1,19 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { fullUidRegex } from "../../../utils/uid";
 import { defaultUserProps, newUserProps } from "../UserProps";
 
 describe("newUserProps", () => {
-    it("gives the new user a valid identifier", () => {
+    it("does not assign an identifier before the user becomes a domain entity", () => {
         const user = newUserProps();
 
-        expect(user.id).toMatch(fullUidRegex);
-    });
-
-    it("gives each new user a different identifier", () => {
-        const first = newUserProps();
-        const second = newUserProps();
-
-        expect(first.id).not.toEqual(second.id);
+        expect(user.id).toBeUndefined();
     });
 
     it("sets its own creation and update dates", () => {

@@ -1,7 +1,6 @@
 import _ from "lodash";
 import { Maybe } from "../../types/utils";
 import { OrgUnit } from "./OrgUnit";
-import { generateUid } from "../../utils/uid";
 import { getId, Id, NamedRef } from "./Ref";
 import { User } from "./User";
 
@@ -88,13 +87,16 @@ export const defaultUserProps: UserProps = {
     dbLocale: "en",
 };
 
-/* A user to be created: its own identifier and no empty references, unlike defaultUserProps (used by import) */
-export function newUserProps(): UserProps {
+/* A new-user draft: no identifier or empty references, unlike defaultUserProps (used by import) */
+export type NewUserProps = Omit<UserProps, "id"> & { id?: undefined };
+export type UserToSave = UserProps | NewUserProps;
+
+export function newUserProps(): NewUserProps {
     const now = new Date();
+    const { id: _defaultId, ...defaultPropsWithoutId } = defaultUserProps;
 
     return {
-        ...defaultUserProps,
-        id: generateUid(),
+        ...defaultPropsWithoutId,
         lastUpdated: now,
         created: now,
         userRoles: [],

@@ -2,13 +2,13 @@ import { useLoading, useSnackbar } from "@eyeseetea/d2-ui-components";
 import { createForm, FormApi } from "final-form";
 import { useCallback, useState } from "react";
 import { useLocation } from "react-router";
-import { newUserProps, UserProps } from "../../../domain/entities/UserProps";
+import { newUserProps, UserProps, UserToSave } from "../../../domain/entities/UserProps";
 import { MetadataResponse } from "../../../types/d2-api";
 import i18n from "../../../utils/i18n";
 import { useAppContext } from "../../contexts/app-context";
 import { useGoBack } from "../../hooks/useGoBack";
 
-export type UserBulkEditFormValues = { users: UserProps[] };
+export type UserBulkEditFormValues = { users: UserToSave[] };
 
 export interface UserBulkEditState {
     shouldRedirect: boolean;
@@ -83,9 +83,9 @@ export function useUserBulkEdit(): UserBulkEditState {
     const isNewUser = useCallback(
         (row: number) => {
             const user = form.getState().values.users[row];
-            return user !== undefined && !initialUsers.some(initialUser => initialUser.id === user.id);
+            return user?.id === undefined;
         },
-        [form, initialUsers]
+        [form]
     );
 
     const openColumnSelector = useCallback(() => setColumnSelectorOpen(true), []);

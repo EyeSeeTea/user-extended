@@ -80,6 +80,21 @@ describe("User Entity", () => {
 
     describe("createNew factory method", () => {
         describe("successful creation", () => {
+            it("generates its own identifier even when the input carries one", () => {
+                const user = User.createNew(validUserProps).getOrThrow();
+
+                expect(user.id).not.toBe(validUserProps.id);
+                expect(user.id).toMatch(/^[a-zA-Z][a-zA-Z0-9]{10}$/);
+            });
+
+            it("generates an identifier when none is given", () => {
+                const { id: _id, ...propsWithoutId } = validUserProps;
+
+                const user = User.createNew(propsWithoutId).getOrThrow();
+
+                expect(user.id).toMatch(/^[a-zA-Z][a-zA-Z0-9]{10}$/);
+            });
+
             it("should create a new user with valid properties", () => {
                 const user = User.createNew(validUserProps).getOrThrow();
 
