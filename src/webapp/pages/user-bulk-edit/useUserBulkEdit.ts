@@ -1,5 +1,5 @@
 import { useLoading, useSnackbar } from "@eyeseetea/d2-ui-components";
-import { createForm, FormApi } from "final-form";
+import { createForm, FormApi, FORM_ERROR } from "final-form";
 import { useCallback, useState } from "react";
 import { useLocation } from "react-router";
 import { newUserProps, UserProps, UserToSave } from "../../../domain/entities/UserProps";
@@ -19,7 +19,7 @@ export interface UserBulkEditState {
     addUser: () => void;
     removeUser: (row: number) => void;
     isNewUser: (row: number) => boolean;
-    save: (values: UserBulkEditFormValues) => Promise<string | undefined>;
+    save: (values: UserBulkEditFormValues) => Promise<{ [FORM_ERROR]?: string } | undefined>;
     goBack: () => void;
     close: () => void;
     changeColumns: (columns: string[]) => void;
@@ -51,7 +51,7 @@ export function useUserBulkEdit(): UserBulkEditState {
 
             if (error) {
                 snackbar.error(error);
-                return error;
+                return { [FORM_ERROR]: error };
             }
 
             if (data && data.status === "ERROR") {

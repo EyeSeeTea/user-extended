@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom";
 import { fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Future } from "../../../../domain/entities/Future";
 import { UserProps } from "../../../../domain/entities/UserProps";
 import {
     getLocationText,
@@ -84,6 +85,19 @@ describe("UserBulkEditPage", () => {
             expect(getFieldStates("Password")[1]).toEqual({ value: "", disabled: false });
         });
     });
+
+    describe("when saving fails", () => {
+        it("shows the failure in the form error box", async () => {
+            const error = "A user is invalid";
+            const state = givenUsersToEdit(["Traore"]);
+
+            renderPage(state, error);
+            fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+            expect(await screen.findByText("Error saving users")).toBeInTheDocument();
+            expect(screen.getAllByText(error)).toHaveLength(2);
+        });
+    });
 });
 
 function givenANavigationStateWithoutUsers(): NavigationState {
@@ -125,8 +139,9 @@ function getSurnameInputs(): HTMLInputElement[] {
     return screen.getAllByPlaceholderText<HTMLInputElement>("Surname");
 }
 
-function renderPage(state: NavigationState) {
+function renderPage(state: NavigationState, saveError?: string) {
     const { context } = getTestContext();
+    if (saveError) vi.spyOn(context.compositionRoot.users, "save").mockReturnValue(Future.error(saveError));
 
     return getReactComponentInRoute(
         <UserBulkEditPage />,
