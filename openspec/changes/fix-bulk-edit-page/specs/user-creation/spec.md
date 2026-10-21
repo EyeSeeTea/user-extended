@@ -1,6 +1,6 @@
 ## Purpose
 
-Defines how the app creates DHIS2 users, from the bulk edit page and from the new user page: the values a new user starts with and the validation that runs before anything is sent to the server.
+Defines how the bulk edit page creates DHIS2 users: the values a new user starts with and the validation that runs before anything is sent to the server.
 
 ## ADDED Requirements
 
@@ -10,10 +10,6 @@ A new-user form SHALL start without an identifier, roles, groups, organisation u
 #### Scenario: New row in bulk edit
 - **WHEN** the user clicks "Add user" in bulk edit
 - **THEN** the new row has no role, group or organisation unit selected and an empty password
-
-#### Scenario: New user page
-- **WHEN** the user opens the new user page from the users list
-- **THEN** the form has no role, group or organisation unit selected and an empty password
 
 ### Requirement: Users are validated as new or existing before saving
 On save, a row with an identifier SHALL be validated with the existing-user rules, and an id-less draft with the new-user rules: first name, surname, a valid username, a valid password, and at least one role, one group and one data capture organisation unit. If any user fails validation, nothing SHALL be sent to the server and the form SHALL show which user and which fields are invalid.
@@ -33,10 +29,3 @@ On save, a row with an identifier SHALL be validated with the existing-user rule
 #### Scenario: Existing users together with a new one
 - **WHEN** the user edits existing users without roles and adds a complete new user, then saves
 - **THEN** the existing users are saved with the existing-user rules (no role is required) and the new user is created
-
-### Requirement: Users can be created from the users list
-The users list SHALL offer an action to create a user, which opens the new user page.
-
-#### Scenario: Create a user from the list
-- **WHEN** the user clicks the create action in the users list
-- **THEN** the new user page opens with an empty user
