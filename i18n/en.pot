@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-08-31T23:58:26.734Z\n"
-"PO-Revision-Date: 2026-08-31T23:58:26.734Z\n"
+"POT-Creation-Date: 2026-10-21T09:59:40.505Z\n"
+"PO-Revision-Date: 2026-10-21T09:59:40.505Z\n"
 
 msgid "Invalid response from server"
 msgstr ""
@@ -143,6 +143,9 @@ msgid "Not all users have emails"
 msgstr ""
 
 msgid "Only admin user can edit logger settings"
+msgstr ""
+
+msgid "Row {{row}}"
 msgstr ""
 
 msgid ""

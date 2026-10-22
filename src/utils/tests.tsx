@@ -1,11 +1,18 @@
 import { render, RenderResult } from "@testing-library/react";
-import { SnackbarProvider } from "@eyeseetea/d2-ui-components";
+import { LoadingProvider, SnackbarProvider } from "@eyeseetea/d2-ui-components";
+import { MuiThemeProvider } from "@material-ui/core/styles";
+import OldMuiThemeProvider from "material-ui/styles/MuiThemeProvider";
 import { ReactNode } from "react";
+import { vi } from "vitest";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { getCompositionRoot } from "../CompositionRoot";
-import { getMockApi } from "../types/d2-api";
+import { getD2ApiFromInstance } from "./d2-api";
 import { AppContext, AppContextState } from "../webapp/contexts/app-context";
 import { Instance } from "../data/entities/Instance";
 import { UserProps } from "../domain/entities/UserProps";
+import muiThemeLegacy from "../webapp/pages/app/themes/dhis2-legacy.theme";
+import { muiTheme } from "../webapp/pages/app/themes/dhis2.theme";
+import { getMuiLocalization } from "../webapp/pages/app/themes/muiLocales";
 
 export function getTestUser(): UserProps {
     return {
@@ -63,9 +70,9 @@ export function getTestD2() {
 }
 
 export function getTestContext() {
-    // Mock api was working with axios but not with fetch
-    const { api } = getMockApi();
+    // The fetch backend has no mock adapter, so tests get a real client they must not let hit the network
     const instance = new Instance({ url: "http://localhost:8080" });
+    const api = getD2ApiFromInstance(instance);
     const context = {
         api: api,
         d2: getTestD2(),
@@ -79,8 +86,53 @@ export function getTestContext() {
 
 export function getReactComponent(children: ReactNode, context: AppContextState): RenderResult {
     return render(
-        <AppContext.Provider value={context}>
-            <SnackbarProvider>{children}</SnackbarProvider>
-        </AppContext.Provider>
+        <MuiThemeProvider theme={muiTheme(getMuiLocalization("en", "US"))}>
+            <OldMuiThemeProvider muiTheme={muiThemeLegacy}>
+                <AppContext.Provider value={context}>
+                    <SnackbarProvider>
+                        <LoadingProvider>{children}</LoadingProvider>
+                    </SnackbarProvider>
+                </AppContext.Provider>
+            </OldMuiThemeProvider>
+        </MuiThemeProvider>
     );
+}
+
+export interface TestRoute {
+    path: string;
+    url: string;
+    state?: unknown;
+}
+
+/* Renders children at the given route; any other route shows the current location (getLocationText) */
+export function getReactComponentInRoute(
+    children: ReactNode,
+    route: TestRoute,
+    context: AppContextState
+): RenderResult {
+    return getReactComponent(
+        <MemoryRouter initialEntries={[{ pathname: route.url, state: route.state }]}>
+            <Routes>
+                <Route path={route.path} element={children} />
+                <Route path="*" element={<CurrentLocation />} />
+            </Routes>
+        </MemoryRouter>,
+        context
+    );
+}
+
+export function getLocationText(pathname: string): string {
+    return `Current location: ${pathname}`;
+}
+
+const CurrentLocation: React.FC = () => {
+    const { pathname } = useLocation();
+    return <p>{getLocationText(pathname)}</p>;
+};
+
+/* jsdom has no layout, so every element measures 0x0 and components that size themselves to their
+   container (e.g. virtualized grids) render nothing. Restored by vi.restoreAllMocks(). */
+export function givenAScreenSize(width: number, height: number): void {
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(width);
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(height);
 }

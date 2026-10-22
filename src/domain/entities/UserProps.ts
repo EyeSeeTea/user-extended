@@ -86,6 +86,31 @@ export const defaultUserProps: UserProps = {
     uiLocale: "en",
     dbLocale: "en",
 };
+
+/* A new-user draft: no identifier or empty references, unlike defaultUserProps (used by import) */
+export type NewUserProps = Omit<UserProps, "id"> & { id?: undefined };
+export type UserToSave = UserProps | NewUserProps;
+
+export function newUserProps(): NewUserProps {
+    const now = new Date();
+    const { id: _defaultId, ...defaultPropsWithoutId } = defaultUserProps;
+
+    return {
+        ...defaultPropsWithoutId,
+        lastUpdated: now,
+        created: now,
+        userRoles: [],
+        userGroups: [],
+        organisationUnits: [],
+        dataViewOrganisationUnits: [],
+        searchOrganisationsUnits: [],
+        authorities: [],
+        password: "",
+        createdBy: undefined,
+        lastModifiedBy: undefined,
+    };
+}
+
 export interface AccessPermissions {
     read: boolean;
     update: boolean;
