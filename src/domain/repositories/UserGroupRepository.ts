@@ -3,7 +3,7 @@ import { FutureData } from "../entities/Future";
 import { CommonFilterParams, PaginatedResponse } from "../entities/PaginatedResponse";
 import { Id } from "../entities/Ref";
 import { UserGroup } from "../entities/UserGroup";
-import { UserProps } from "../entities/UserProps";
+import { LocaleCode, UserProps } from "../entities/UserProps";
 
 export interface UserGroupRepository {
     getAll(): FutureData<UserGroup[]>;
@@ -12,6 +12,8 @@ export interface UserGroupRepository {
         hideUsers: Maybe<Id[]>;
         hideGroups: Maybe<Id[]>;
         descriptionSource: Maybe<string>;
+        descriptionHasTranslations: boolean;
+        localeCode: LocaleCode;
     }): FutureData<UserGroup[]>;
 }
 

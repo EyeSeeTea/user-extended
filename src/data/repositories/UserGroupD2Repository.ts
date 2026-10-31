@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { Codec, GetType, optional, record, string } from "purify-ts";
 import { D2Api } from "../../types/d2-api";
 import { Future, FutureData } from "../../domain/entities/Future";
 import { PaginatedResponse } from "../../domain/entities/PaginatedResponse";
@@ -6,6 +7,7 @@ import { UserGroup } from "../../domain/entities/UserGroup";
 import { apiToFuture } from "../../utils/futures";
 import { GetUsersGroupsOptions, UserGroupRepository } from "../../domain/repositories/UserGroupRepository";
 import { Id } from "../../domain/entities/Ref";
+import { LocaleCode } from "../../domain/entities/UserProps";
 import { Maybe } from "../../types/utils";
 
 export class UserGroupD2Repository implements UserGroupRepository {
@@ -65,6 +67,8 @@ export class UserGroupD2Repository implements UserGroupRepository {
         hideUsers: Id[];
         hideGroups: Id[];
         descriptionSource: Maybe<string>;
+        descriptionHasTranslations: boolean;
+        localeCode: LocaleCode;
     }): FutureData<UserGroup[]> {
         return this.getAllUserGroups({
             initialPage: 1,
@@ -78,7 +82,11 @@ export class UserGroupD2Repository implements UserGroupRepository {
                     return UserGroup.create({
                         id: group.id,
                         name: group.displayName,
-                        description: getDescription(group, options.descriptionSource),
+                        description: getDescription(group, {
+                            descriptionSource: options.descriptionSource,
+                            hasTranslations: options.descriptionHasTranslations,
+                            localeCode: options.localeCode,
+                        }),
                         users: filteredUsers.map(user => ({ id: user.id, name: user.displayName })),
                     });
                 });
@@ -149,9 +157,61 @@ type D2ApiUserGroup = {
 
 /* The description source is an opaque handle for the domain: here it is resolved
  * as the id of the metadata attribute holding the description. */
-function getDescription(d2UserGroup: D2ApiUserGroup, descriptionSource: Maybe<string>): Maybe<string> {
+function getDescription(
+    d2UserGroup: D2ApiUserGroup,
+    options: { descriptionSource: Maybe<string>; hasTranslations: boolean; localeCode: LocaleCode }
+): Maybe<string> {
+    const { descriptionSource, hasTranslations, localeCode } = options;
     if (!descriptionSource) return undefined;
 
-    return d2UserGroup.attributeValues?.find(attributeValue => attributeValue.attribute.id === descriptionSource)
-        ?.value;
+    const rawValue = d2UserGroup.attributeValues?.find(
+        attributeValue => attributeValue.attribute.id === descriptionSource
+    )?.value;
+
+    return resolveUserGroupDescription({ rawValue, hasTranslations, localeCode });
+}
+
+const translatedDescriptionCodec = Codec.interface({
+    default: optional(string),
+    translations: optional(record(string, string)),
+});
+
+type TranslatedDescription = GetType<typeof translatedDescriptionCodec>;
+
+/* A locale code can carry a region (pt_BR), while translations are usually keyed by
+ * language only, so the base language is tried too. */
+const LOCALE_SEPARATORS = /[_-]/;
+
+export function resolveUserGroupDescription(options: {
+    rawValue: Maybe<string>;
+    hasTranslations: boolean;
+    localeCode: LocaleCode;
+}): Maybe<string> {
+    const { rawValue, hasTranslations, localeCode } = options;
+
+    if (!hasTranslations) return rawValue;
+
+    return translatedDescriptionCodec
+        .decode(parseJson(rawValue))
+        .map(description => resolveTranslation(description, localeCode))
+        .orDefault(undefined);
+}
+
+/* An attribute holding plain text while the setting is on is not an error the admin
+ * can act on from the table, so the cell stays empty instead of showing the raw value. */
+function parseJson(rawValue: Maybe<string>): unknown {
+    try {
+        return JSON.parse(rawValue ?? "");
+    } catch {
+        return undefined;
+    }
+}
+
+function resolveTranslation(description: TranslatedDescription, localeCode: LocaleCode): Maybe<string> {
+    const translations = description.translations ?? {};
+    const baseLanguage = localeCode.split(LOCALE_SEPARATORS)[0] ?? localeCode;
+
+    return [translations[localeCode], translations[baseLanguage], description.default]
+        .map(candidate => candidate?.trim())
+        .find(candidate => Boolean(candidate));
 }
