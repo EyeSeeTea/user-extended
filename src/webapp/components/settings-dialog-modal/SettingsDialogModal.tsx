@@ -123,6 +123,13 @@ export const SettingsDialogModal: React.FC<SettingsDialogModalProps> = props => 
         [appSettings, setAppSettings]
     );
 
+    const updateUserGroupDescriptionHasTranslations = React.useCallback(
+        (hasTranslations: boolean) => {
+            setAppSettings(appSettings.updateUserGroupDescriptionHasTranslations(hasTranslations));
+        },
+        [appSettings, setAppSettings]
+    );
+
     const roleColumnsMetadata = React.useMemo(
         () => [
             { name: "name", text: i18n.t("Name") },
@@ -193,6 +200,8 @@ export const SettingsDialogModal: React.FC<SettingsDialogModalProps> = props => 
                             <UserGroupDescriptionSourceSelect
                                 value={appSettings.userGroupDescriptionSource}
                                 onChange={updateUserGroupDescriptionSource}
+                                hasTranslations={appSettings.userGroupDescriptionHasTranslations}
+                                onHasTranslationsChange={updateUserGroupDescriptionHasTranslations}
                             />
                         </ColumnsSettingsPage>
                         <ColumnsSettingsPage

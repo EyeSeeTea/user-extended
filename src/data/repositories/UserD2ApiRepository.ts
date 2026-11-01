@@ -136,7 +136,11 @@ export class UserD2ApiRepository implements UserRepository {
     public getCurrent(): FutureData<User> {
         return apiToFuture(
             this.api.currentUser.get({
-                fields: { ...fields, organisationUnits: { ...fields.organisationUnits, level: true } },
+                fields: {
+                    ...fields,
+                    organisationUnits: { ...fields.organisationUnits, level: true },
+                    settings: { keyDbLocale: true },
+                },
             })
         ).map(user => this.toDomainUser(user));
     }
@@ -828,7 +832,7 @@ export class UserD2ApiRepository implements UserRepository {
             password: userCredentials.password,
             accountExpiry: userCredentials.accountExpiry,
             authorities,
-            dbLocale: "",
+            dbLocale: input.settings?.keyDbLocale ?? "",
             uiLocale: "",
             ...this.getUserAuditFields(input),
         });
@@ -1056,7 +1060,11 @@ export const savePrefetchFields = {
 } as const;
 
 export type ApiUser = SelectedPick<D2UserSchema, typeof fields>;
-export type ApiUserWithAudit = ApiUser & { userCredentials: ApiUser["userCredentials"] & D2UserAudit } & D2UserAudit;
+/* Only requested for the current user: the list queries do not need the locale */
+type ApiUserSettings = { settings?: { keyDbLocale?: string } };
+
+export type ApiUserWithAudit = ApiUser & { userCredentials: ApiUser["userCredentials"] & D2UserAudit } & D2UserAudit &
+    ApiUserSettings;
 
 export const defaultColumns: Array<keyof User> = [
     "username",

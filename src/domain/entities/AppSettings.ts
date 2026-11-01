@@ -48,6 +48,7 @@ type AppSettingsAttr = {
     /* Opaque handle for the source of the user group description. The domain
      * never interprets its content: only the repository knows how to resolve it. */
     userGroupDescriptionSource: Maybe<string>;
+    userGroupDescriptionHasTranslations: boolean;
 };
 
 type AppSettingStatus = "active" | "inactive";
@@ -93,6 +94,7 @@ export class AppSettings extends Struct<AppSettingsAttr>() {
             uiDashboardActionsAccess: this.defaultUiDashboardActions(),
             groupColumns: this.defaultGroupColumns(),
             userGroupDescriptionSource: undefined,
+            userGroupDescriptionHasTranslations: false,
         });
     }
 
@@ -147,6 +149,10 @@ export class AppSettings extends Struct<AppSettingsAttr>() {
 
     updateUserGroupDescriptionSource(source: Maybe<string>): AppSettings {
         return this._update({ userGroupDescriptionSource: source || undefined });
+    }
+
+    updateUserGroupDescriptionHasTranslations(hasTranslations: boolean): AppSettings {
+        return this._update({ userGroupDescriptionHasTranslations: hasTranslations });
     }
 
     updateColumnField(columnToUpdate: UserColumns, value: ColumnSettingValue): SettingsUserColumn[] {

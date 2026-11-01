@@ -39,6 +39,22 @@ describe("AppSettings", () => {
         });
     });
 
+    describe("userGroupDescriptionHasTranslations", () => {
+        it("is off in the default settings, so the attribute is read as plain text", () => {
+            expect(AppSettings.defaultSettings("active").userGroupDescriptionHasTranslations).toBe(false);
+        });
+
+        it("is turned on by its updater without touching the configured source", () => {
+            const settings = givenSettings({
+                groupColumns: [{ field: "description", value: "visible" }],
+                descriptionSource: descriptionSource,
+            }).updateUserGroupDescriptionHasTranslations(true);
+
+            expect(settings.userGroupDescriptionHasTranslations).toBe(true);
+            expect(settings.userGroupDescriptionSource).toBe(descriptionSource);
+        });
+    });
+
     describe("searchableGroupColumns", () => {
         it("excludes the columns disabled in the settings", () => {
             const settings = givenSettings({
