@@ -27,6 +27,7 @@ import { AppSettings } from "../../../domain/entities/AppSettings";
 import { GroupColumnSetting } from "../../../domain/entities/GroupColumn";
 import { useUserGroups } from "./useUserGroups";
 import { createPagination, filterAndSortItemWithUsers } from "../../utils/table";
+import { useHasNativeUserGroupDescription } from "../../hooks/userHooks";
 
 function generateTableConfig(options: {
     currentPageSize: number;
@@ -74,6 +75,7 @@ export const UserGroupTable: React.FC<UserGroupTableProps> = React.memo(props =>
     const [filterEmptyUsers, setFilterEmptyUsers] = React.useState(defaultFilterEmptyUsers);
     const { compositionRoot, currentUser } = useAppContext();
     const classes = useStyles();
+    const hasNativeDescription = useHasNativeUserGroupDescription();
     const { userGroups } = useUserGroups({
         excludeUsersOutsideOrgUnits: excludeUsersOrgUnit,
         currentUser,
@@ -83,8 +85,10 @@ export const UserGroupTable: React.FC<UserGroupTableProps> = React.memo(props =>
     const [columnsPreference, setColumnsPreference] = React.useState<GroupColumnSetting[]>([]);
 
     React.useEffect(() => {
-        return compositionRoot.groupColumns.get.execute(currentUser).run(setColumnsPreference, console.error);
-    }, [compositionRoot.groupColumns, currentUser, appSettings]);
+        return compositionRoot.groupColumns.get
+            .execute(currentUser, { hasNativeDescription })
+            .run(setColumnsPreference, console.error);
+    }, [compositionRoot.groupColumns, currentUser, appSettings, hasNativeDescription]);
 
     const items = React.useMemo(
         () =>
@@ -110,7 +114,10 @@ export const UserGroupTable: React.FC<UserGroupTableProps> = React.memo(props =>
     /* Search and export follow the columns enabled in the settings, not the ones rendered: a
      * disabled column must not leak its content through the search results nor through the
      * exported file, not even for a super admin that can still show it in the table. */
-    const searchableColumns = React.useMemo(() => appSettings.searchableGroupColumns, [appSettings]);
+    const searchableColumns = React.useMemo(
+        () => appSettings.searchableGroupColumns(hasNativeDescription),
+        [appSettings, hasNativeDescription]
+    );
     const isDescriptionEnabled = searchableColumns.includes("description");
 
     const getRows = React.useCallback(

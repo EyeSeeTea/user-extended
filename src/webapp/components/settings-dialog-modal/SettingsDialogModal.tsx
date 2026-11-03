@@ -19,6 +19,7 @@ import { useAppSettingsContext } from "../../contexts/AppSettingsProvider";
 import { useUserColumns } from "../user-list-table/userColumns";
 import { UserGroupDescriptionSourceSelect } from "../user-group-description-source-select/UserGroupDescriptionSourceSelect";
 import { Maybe } from "../../../types/utils";
+import { useHasNativeUserGroupDescription } from "../../hooks/userHooks";
 
 type SettingsOption = "import" | "logger" | "columns" | "permissions" | "user-permissions" | "filter-permissions";
 
@@ -46,6 +47,7 @@ export const SettingsDialogModal: React.FC<SettingsDialogModalProps> = props => 
     const { save, appSettings: initialData } = useAppSettingsContext();
     const [appSettings, setAppSettings] = React.useState<AppSettings>(initialData);
     const userColumns = useUserColumns();
+    const hasNativeDescription = useHasNativeUserGroupDescription();
 
     const loading = useLoading();
     const snackbar = useSnackbar();
@@ -158,7 +160,10 @@ export const SettingsDialogModal: React.FC<SettingsDialogModalProps> = props => 
         []
     );
 
-    const visibleGroupColumns = React.useMemo(() => appSettings.availableGroupColumns, [appSettings]);
+    const visibleGroupColumns = React.useMemo(
+        () => appSettings.availableGroupColumns(hasNativeDescription),
+        [appSettings, hasNativeDescription]
+    );
 
     const saveSettings = React.useCallback(() => {
         onSaveData(appSettings);
@@ -202,6 +207,7 @@ export const SettingsDialogModal: React.FC<SettingsDialogModalProps> = props => 
                                 onChange={updateUserGroupDescriptionSource}
                                 hasTranslations={appSettings.userGroupDescriptionHasTranslations}
                                 onHasTranslationsChange={updateUserGroupDescriptionHasTranslations}
+                                hasNativeDescription={hasNativeDescription}
                             />
                         </ColumnsSettingsPage>
                         <ColumnsSettingsPage

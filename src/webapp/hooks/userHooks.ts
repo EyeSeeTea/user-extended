@@ -15,6 +15,7 @@ import { Maybe } from "../../types/utils";
 import { useAppSettingsContext } from "../contexts/AppSettingsProvider";
 import { Column } from "../../domain/entities/UserColumn";
 import { UserProps } from "../../domain/entities/UserProps";
+import { hasNativeUserGroupDescription } from "../../utils/d2-api";
 
 type UseSaveUsersOrgUnitsProps = { onSuccess: () => void };
 type UseExportUsersProps = {
@@ -215,6 +216,14 @@ export function useDhis2Version(): string | undefined {
     }, [compositionRoot.instance]);
 
     return version;
+}
+
+/* False while the version is loading, so the description column is only shown
+ * as native once the instance has answered. */
+export function useHasNativeUserGroupDescription(): boolean {
+    const dhis2Version = useDhis2Version();
+
+    return dhis2Version != null && hasNativeUserGroupDescription(dhis2Version);
 }
 
 export const useColumnsPreferences = (props: UseVisibleColumnsProps) => {

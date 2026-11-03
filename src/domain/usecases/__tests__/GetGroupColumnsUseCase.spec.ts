@@ -10,6 +10,7 @@ import { Maybe } from "../../../types/utils";
 import { defaultUserProps, UserProps } from "../../entities/UserProps";
 
 const nonAdminUser: UserProps = { ...defaultUserProps, id: "user-1", authorities: [] };
+const withoutNativeDescription = { hasNativeDescription: false };
 
 let columnRepositoryMock: GroupColumnD2Repository;
 let appSettingsRepositoryMock: AppSettingsD2Repository;
@@ -23,7 +24,7 @@ describe("GetGroupColumnsUseCase", () => {
     it("excludes the description column when no description source is configured", async () => {
         const useCase = givenUseCase({ descriptionSource: undefined, columnValue: "visible" });
 
-        const columns = await useCase.execute(nonAdminUser).toPromise();
+        const columns = await useCase.execute(nonAdminUser, withoutNativeDescription).toPromise();
 
         expect(fieldNames(columns)).toEqual(["name", "users"]);
     });
@@ -31,7 +32,7 @@ describe("GetGroupColumnsUseCase", () => {
     it("includes the description column when a description source is configured", async () => {
         const useCase = givenUseCase({ descriptionSource: "attribute-1", columnValue: "visible" });
 
-        const columns = await useCase.execute(nonAdminUser).toPromise();
+        const columns = await useCase.execute(nonAdminUser, withoutNativeDescription).toPromise();
 
         expect(fieldNames(columns)).toContain("description");
     });
@@ -39,7 +40,7 @@ describe("GetGroupColumnsUseCase", () => {
     it("applies the configured value to the description column", async () => {
         const useCase = givenUseCase({ descriptionSource: "attribute-1", columnValue: "mandatory" });
 
-        const columns = await useCase.execute(nonAdminUser).toPromise();
+        const columns = await useCase.execute(nonAdminUser, withoutNativeDescription).toPromise();
 
         expect(findColumn(columns, "description")?.state).toEqual("selected-disabled");
     });
@@ -47,7 +48,7 @@ describe("GetGroupColumnsUseCase", () => {
     it("excludes the description column when it is disabled, even with a source configured", async () => {
         const useCase = givenUseCase({ descriptionSource: "attribute-1", columnValue: "disabled" });
 
-        const columns = await useCase.execute(nonAdminUser).toPromise();
+        const columns = await useCase.execute(nonAdminUser, withoutNativeDescription).toPromise();
 
         expect(fieldNames(columns)).toEqual(["name", "users"]);
     });
@@ -55,9 +56,17 @@ describe("GetGroupColumnsUseCase", () => {
     it("adds the description column as unselected when it is optional, so the user can show it", async () => {
         const useCase = givenUseCase({ descriptionSource: "attribute-1", columnValue: "optional" });
 
-        const columns = await useCase.execute(nonAdminUser).toPromise();
+        const columns = await useCase.execute(nonAdminUser, withoutNativeDescription).toPromise();
 
         expect(findColumn(columns, "description")?.state).toEqual("unselected");
+    });
+
+    it("includes the description column on an instance with the native field and no source configured", async () => {
+        const useCase = givenUseCase({ descriptionSource: undefined, columnValue: "visible" });
+
+        const columns = await useCase.execute(nonAdminUser, { hasNativeDescription: true }).toPromise();
+
+        expect(fieldNames(columns)).toEqual(["name", "description", "users"]);
     });
 
     it("keeps the description column between name and users when the user has no preference for it", async () => {
@@ -70,7 +79,7 @@ describe("GetGroupColumnsUseCase", () => {
             ],
         });
 
-        const columns = await useCase.execute(nonAdminUser).toPromise();
+        const columns = await useCase.execute(nonAdminUser, withoutNativeDescription).toPromise();
 
         expect(fieldNames(columns)).toEqual(["name", "description", "users"]);
     });

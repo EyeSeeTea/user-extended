@@ -9,6 +9,12 @@ export function getMajorVersion(version: string): number {
     return Number(apiVersion);
 }
 
+/* DHIS2 2.43 added a native description field to user groups, the source that replaces
+ * the metadata attribute configured in the settings. */
+export function hasNativeUserGroupDescription(version: string): boolean {
+    return getMajorVersion(version) >= 43;
+}
+
 export function getD2ApiFromInstance(instance: Instance) {
     return new D2Api({ baseUrl: instance.url, auth: instance.auth, backend: "fetch" });
 }

@@ -51,7 +51,7 @@ const scenarios: Scenario[] = [
             when(repository.get()).thenReturn(Future.success(columns));
             const useCase = new GetGroupColumnsUseCase(instance(repository), instance(appSettingsRepositoryMock));
 
-            return useCase.execute(user).toPromise();
+            return useCase.execute(user, { hasNativeDescription: false }).toPromise();
         },
     },
     {

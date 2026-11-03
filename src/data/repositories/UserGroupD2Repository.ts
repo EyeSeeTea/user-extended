@@ -9,6 +9,10 @@ import { GetUsersGroupsOptions, UserGroupRepository } from "../../domain/reposit
 import { Id } from "../../domain/entities/Ref";
 import { LocaleCode } from "../../domain/entities/UserProps";
 import { Maybe } from "../../types/utils";
+import { hasNativeUserGroupDescription } from "../../utils/d2-api";
+
+/* The native field from DHIS2 2.43 on, the configured metadata attribute before that */
+type DescriptionSource = { kind: "native" } | { kind: "attribute"; attributeId: string };
 
 export class UserGroupD2Repository implements UserGroupRepository {
     constructor(private api: D2Api) {}
@@ -70,33 +74,33 @@ export class UserGroupD2Repository implements UserGroupRepository {
         descriptionHasTranslations: boolean;
         localeCode: LocaleCode;
     }): FutureData<UserGroup[]> {
-        return this.getAllUserGroups({
-            initialPage: 1,
-            pageSize: 100,
-            descriptionSource: options.descriptionSource,
-        }).map(d2UserGroups => {
-            return d2UserGroups
-                .filter(group => !options.hideGroups.includes(group.id))
-                .map(group => {
-                    const filteredUsers = group.users.filter(user => !options.hideUsers.includes(user.id));
-                    return UserGroup.create({
-                        id: group.id,
-                        name: group.displayName,
-                        description: getDescription(group, {
-                            descriptionSource: options.descriptionSource,
-                            hasTranslations: options.descriptionHasTranslations,
-                            localeCode: options.localeCode,
-                        }),
-                        users: filteredUsers.map(user => ({ id: user.id, name: user.displayName })),
+        return Future.fromPromise(this.api.getVersion()).flatMap(version => {
+            const descriptionSource = getDescriptionSource(version, options.descriptionSource);
+
+            return this.getAllUserGroups({ initialPage: 1, pageSize: 100, descriptionSource }).map(d2UserGroups => {
+                return d2UserGroups
+                    .filter(group => !options.hideGroups.includes(group.id))
+                    .map(group => {
+                        const filteredUsers = group.users.filter(user => !options.hideUsers.includes(user.id));
+                        return UserGroup.create({
+                            id: group.id,
+                            name: group.displayName,
+                            description: getDescription(group, {
+                                descriptionSource,
+                                hasTranslations: options.descriptionHasTranslations,
+                                localeCode: options.localeCode,
+                            }),
+                            users: filteredUsers.map(user => ({ id: user.id, name: user.displayName })),
+                        });
                     });
-                });
+            });
         });
     }
 
     private getAllUserGroups(options: {
         initialPage: number;
         pageSize: number;
-        descriptionSource: Maybe<string>;
+        descriptionSource: Maybe<DescriptionSource>;
     }): FutureData<D2ApiUserGroup[]> {
         const { initialPage, pageSize, descriptionSource } = options;
 
@@ -114,25 +118,33 @@ export class UserGroupD2Repository implements UserGroupRepository {
         return fetchByPage(initialPage);
     }
 
-    /* attributeValues is only needed to resolve the description, so instances without a configured
-     * source do not pay for that extra payload on every load of the tab. */
+    /* The request asks only for what the active source needs, so an instance does not pay for the
+     * payload of the other one on every load of the tab. */
     private getUserGroupsPage(options: {
         page: number;
         pageSize: number;
-        descriptionSource: Maybe<string>;
+        descriptionSource: Maybe<DescriptionSource>;
     }): FutureData<D2ApiUserGroupsPage> {
         const { page, pageSize, descriptionSource } = options;
         const fields = { id: true, displayName: true, users: { id: true, displayName: true } };
 
-        return descriptionSource
-            ? apiToFuture(
-                  this.api.models.userGroups.get({
-                      fields: { ...fields, attributeValues: { value: true, attribute: { id: true } } },
-                      page,
-                      pageSize,
-                  })
-              )
-            : apiToFuture(this.api.models.userGroups.get({ fields, page, pageSize }));
+        switch (descriptionSource?.kind) {
+            case "native": {
+                /* description is missing from the userGroup schema of d2-api 2.41 */
+                const nativeFields = { ...fields, description: true } as typeof fields;
+                return apiToFuture(this.api.models.userGroups.get({ fields: nativeFields, page, pageSize }));
+            }
+            case "attribute":
+                return apiToFuture(
+                    this.api.models.userGroups.get({
+                        fields: { ...fields, attributeValues: { value: true, attribute: { id: true } } },
+                        page,
+                        pageSize,
+                    })
+                );
+            default:
+                return apiToFuture(this.api.models.userGroups.get({ fields, page, pageSize }));
+        }
     }
 }
 
@@ -148,25 +160,35 @@ type D2ApiUserGroup = {
         id: string;
         displayName: string;
     }>;
-    /* Only present when a description source is configured */
+    /* Each one is only present when its source is the active one */
+    description?: string;
     attributeValues?: Array<{
         value: string;
         attribute: { id: string };
     }>;
 };
 
-/* The description source is an opaque handle for the domain: here it is resolved
- * as the id of the metadata attribute holding the description. */
+/* The configured source is an opaque handle for the domain: here it is resolved as the id of
+ * the metadata attribute holding the description, and only for instances without the native field. */
+function getDescriptionSource(version: string, configuredAttributeId: Maybe<string>): Maybe<DescriptionSource> {
+    if (hasNativeUserGroupDescription(version)) return { kind: "native" };
+
+    return configuredAttributeId ? { kind: "attribute", attributeId: configuredAttributeId } : undefined;
+}
+
 function getDescription(
     d2UserGroup: D2ApiUserGroup,
-    options: { descriptionSource: Maybe<string>; hasTranslations: boolean; localeCode: LocaleCode }
+    options: { descriptionSource: Maybe<DescriptionSource>; hasTranslations: boolean; localeCode: LocaleCode }
 ): Maybe<string> {
     const { descriptionSource, hasTranslations, localeCode } = options;
     if (!descriptionSource) return undefined;
 
-    const rawValue = d2UserGroup.attributeValues?.find(
-        attributeValue => attributeValue.attribute.id === descriptionSource
-    )?.value;
+    const rawValue =
+        descriptionSource.kind === "native"
+            ? d2UserGroup.description
+            : d2UserGroup.attributeValues?.find(
+                  attributeValue => attributeValue.attribute.id === descriptionSource.attributeId
+              )?.value;
 
     return resolveUserGroupDescription({ rawValue, hasTranslations, localeCode });
 }

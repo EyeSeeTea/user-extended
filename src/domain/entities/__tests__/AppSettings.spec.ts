@@ -6,7 +6,7 @@ const descriptionSource = "attribute-id";
 
 describe("AppSettings", () => {
     describe("availableGroupColumns", () => {
-        it("removes the description column when no source is configured", () => {
+        it("removes the description column without a native field and without a configured source", () => {
             const settings = givenSettings({
                 groupColumns: [
                     { field: "name", value: "mandatory" },
@@ -15,7 +15,7 @@ describe("AppSettings", () => {
                 ],
             });
 
-            expect(settings.availableGroupColumns).toEqual([
+            expect(settings.availableGroupColumns(false)).toEqual([
                 { field: "name", value: "mandatory" },
                 { field: "users", value: "optional" },
             ]);
@@ -31,9 +31,25 @@ describe("AppSettings", () => {
                 descriptionSource: descriptionSource,
             });
 
-            expect(settings.availableGroupColumns).toEqual([
+            expect(settings.availableGroupColumns(false)).toEqual([
                 { field: "name", value: "mandatory" },
                 { field: "description", value: "disabled" },
+                { field: "users", value: "optional" },
+            ]);
+        });
+
+        it("keeps the description column on an instance with the native field and no configured source", () => {
+            const settings = givenSettings({
+                groupColumns: [
+                    { field: "name", value: "mandatory" },
+                    { field: "description", value: "visible" },
+                    { field: "users", value: "optional" },
+                ],
+            });
+
+            expect(settings.availableGroupColumns(true)).toEqual([
+                { field: "name", value: "mandatory" },
+                { field: "description", value: "visible" },
                 { field: "users", value: "optional" },
             ]);
         });
@@ -66,7 +82,7 @@ describe("AppSettings", () => {
                 descriptionSource: descriptionSource,
             });
 
-            expect(settings.searchableGroupColumns).toEqual(["name", "users"]);
+            expect(settings.searchableGroupColumns(false)).toEqual(["name", "users"]);
         });
 
         it("includes the description when it is enabled and has a source", () => {
@@ -79,7 +95,7 @@ describe("AppSettings", () => {
                 descriptionSource: descriptionSource,
             });
 
-            expect(settings.searchableGroupColumns).toEqual(["name", "description", "users"]);
+            expect(settings.searchableGroupColumns(false)).toEqual(["name", "description", "users"]);
         });
 
         it("excludes the description when it is enabled but has no source", () => {
@@ -91,7 +107,19 @@ describe("AppSettings", () => {
                 ],
             });
 
-            expect(settings.searchableGroupColumns).toEqual(["name", "users"]);
+            expect(settings.searchableGroupColumns(false)).toEqual(["name", "users"]);
+        });
+
+        it("includes the description on an instance with the native field and no configured source", () => {
+            const settings = givenSettings({
+                groupColumns: [
+                    { field: "name", value: "mandatory" },
+                    { field: "description", value: "visible" },
+                    { field: "users", value: "visible" },
+                ],
+            });
+
+            expect(settings.searchableGroupColumns(true)).toEqual(["name", "description", "users"]);
         });
     });
 });

@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-10-31T16:13:50.217Z\n"
-"PO-Revision-Date: 2026-10-31T16:13:50.219Z\n"
+"POT-Creation-Date: 2026-11-03T17:06:17.909Z\n"
+"PO-Revision-Date: 2026-11-03T17:06:17.910Z\n"
 
 msgid "Invalid response from server"
 msgstr ""
@@ -621,6 +621,9 @@ msgstr ""
 msgid "User group description"
 msgstr ""
 
+msgid "Description in JSON format with translations"
+msgstr ""
+
 msgid "Attribute in JSON format with translations"
 msgstr ""
 
@@ -630,10 +633,28 @@ msgid ""
 msgstr ""
 
 msgid ""
+"The Description field of the user group is read as a JSON with "
+"translations, shown in the database language of each user. Without a "
+"translation for that language it falls back to the default of the JSON, and "
+"a plain text value leaves the Description column empty."
+msgstr ""
+
+msgid ""
 "The value of the attribute is read as a JSON with translations, shown in "
 "the database language of each user. Without a translation for that language "
 "it falls back to the default of the JSON, and a plain text value leaves the "
 "Description column empty."
+msgstr ""
+
+msgid "The description comes from the Description field of the user group."
+msgstr ""
+
+msgid ""
+"The attribute configured as the description is no longer used. Its content "
+"has to be migrated by hand to the Description field of each user group."
+msgstr ""
+
+msgid "Do not show this message again"
 msgstr ""
 
 msgid ""
