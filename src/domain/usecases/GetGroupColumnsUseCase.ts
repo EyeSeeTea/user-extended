@@ -11,11 +11,11 @@ export class GetGroupColumnsUseCase {
         private appSettingsRepository: AppSettingsRepository
     ) {}
 
-    execute(user: UserProps): FutureData<GroupColumnSetting[]> {
+    execute(user: UserProps, options: { hasNativeDescription: boolean }): FutureData<GroupColumnSetting[]> {
         return this.appSettingsRepository.get().flatMap(appSettings => {
             return this.columnRepository.get().map(groupColumnsPreferences => {
                 return resolveColumns({
-                    columnsConfig: appSettings.availableGroupColumns,
+                    columnsConfig: appSettings.availableGroupColumns(options.hasNativeDescription),
                     preferences: groupColumnsPreferences,
                     user: user,
                     buildColumn: (fieldName, state, position) => ({ fieldName, state, position }),

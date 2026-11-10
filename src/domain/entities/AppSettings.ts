@@ -98,21 +98,24 @@ export class AppSettings extends Struct<AppSettingsAttr>() {
         });
     }
 
-    get hasUserGroupDescriptionSource(): boolean {
-        return Boolean(this.userGroupDescriptionSource);
+    hasUserGroupDescription(hasNativeDescription: boolean): boolean {
+        return hasNativeDescription || Boolean(this.userGroupDescriptionSource);
     }
 
-    /* Without a configured source there is nothing to show in the description column */
-    get availableGroupColumns(): SettingsGroupColumn[] {
-        return this.hasUserGroupDescriptionSource
+    /* The description column needs a source: the native field of the instance or,
+     * on older ones, a configured attribute */
+    availableGroupColumns(hasNativeDescription: boolean): SettingsGroupColumn[] {
+        return this.hasUserGroupDescription(hasNativeDescription)
             ? this.groupColumns
             : this.groupColumns.filter(column => column.field !== "description");
     }
 
     /* Fields the user group search and the exports work with: a column disabled in the settings
      * must not leak its content, not even for a super admin that can still show it in the table */
-    get searchableGroupColumns(): GroupColumnType[] {
-        return this.availableGroupColumns.filter(column => column.value !== "disabled").map(column => column.field);
+    searchableGroupColumns(hasNativeDescription: boolean): GroupColumnType[] {
+        return this.availableGroupColumns(hasNativeDescription)
+            .filter(column => column.value !== "disabled")
+            .map(column => column.field);
     }
 
     get isActive(): boolean {
